@@ -26,6 +26,14 @@ public class QuestionService {
         return questionDao.findByCategory(category);
     }
 
+    public List<Question> getNRandomQuestionsByCategory(String category, Integer numQ) {
+        Boolean isCateGoryExist = questionDao.existsByCategory(category);
+        if(!isCateGoryExist){
+            throw new ApiException("Category "+category+" not exists.", HttpStatus.NOT_FOUND);
+        }
+        return questionDao.findNRandomByCategory(category, numQ);
+    }
+
     public String addQuestion(Question question) {
         questionDao.save(question);
         return "Question added successfully.";
