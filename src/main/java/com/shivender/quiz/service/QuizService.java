@@ -5,6 +5,7 @@ import com.shivender.quiz.exceptions.ApiException;
 import com.shivender.quiz.model.Question;
 import com.shivender.quiz.model.QuestionWrapper;
 import com.shivender.quiz.model.Quiz;
+import com.shivender.quiz.model.QuizResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,9 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class QuizService {
@@ -67,5 +66,36 @@ public class QuizService {
             questionWrapperList.add(qw);
         }
         return questionWrapperList;
+    }
+
+    public Map<String, Object> submitQuiz(String id, Set<QuizResponse> quizResponseSet) {
+        if(id == null || id.isEmpty()){
+            throw new ApiException("Id required.", HttpStatus.BAD_REQUEST);
+        }
+        List<Question> questionList = quizDao.findById(id).orElseThrow(() -> {
+            throw new ApiException("Quiz id does not exits.", HttpStatus.NOT_FOUND);
+        }).getQuestionList();
+        if (questionList == null || questionList.isEmpty()) {
+            throw new ApiException("No questions found for the given quiz ID.", HttpStatus.NOT_FOUND);
+        }
+
+        Integer score = 0;
+        for(QuizResponse qr : quizResponseSet){
+            Question matchingQuestion = questionList.stream()
+                    .filter(q -> q.getId().equals(qr.getId()))
+                    .findFirst()
+                    .orElse(null);
+            if(matchingQuestion != null && matchingQuestion.getAnswer().equals(qr.getResponse())){
+                score++;
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("quiz_id",id);
+        result.put("total_questions", questionList.size());
+        result.put("attempted_questions", quizResponseSet.size());
+        result.put("score",score);
+
+        return result;
     }
 }
